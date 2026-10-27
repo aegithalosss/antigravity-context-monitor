@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #121214;
+      color: #e5e5e5;
+      padding: 12px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    .main-card {
+      background-color: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 16px;
+      width: 100%;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      user-select: none;
+    }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .items-baseline { align-items: baseline; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 6px; }
+    .gap-2 { gap: 8px; }
+    .space-x > * + * { margin-left: 12px; }
+    .space-y-sm > * + * { margin-top: 6px; }
+    .space-y-md > * + * { margin-top: 8px; }
+    .w-full { width: 100%; }
+    .w-fixed-pct { display: inline-block; width: 40px; text-align: right; }
+    .text-right { text-align: right; }
+
+    /* Typography */
+    .text-xl { font-size: 20px; line-height: 28px; }
+    .text-xs { font-size: 12px; line-height: 16px; }
+    .text-11 { font-size: 11px; }
+    .text-10 { font-size: 10px; }
+    .font-normal { font-weight: 400; }
+    .font-medium { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+    .tracking-tight { letter-spacing: -0.025em; }
+
+    /* Colors */
+    .text-white { color: #ffffff; }
+    .text-zinc-200 { color: #e4e4e7; }
+    .text-zinc-300 { color: #d4d4d8; }
+    .text-zinc-400 { color: #a1a1aa; }
+    .text-zinc-500 { color: #71717a; }
+    .text-emerald-400 { color: #34d399; }
+    .text-emerald-500 { color: #10b981; }
+    .text-red-400 { color: #f87171; }
+    .text-red-500 { color: #ef4444; }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background-color: #27272a;
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 14px;
+    }
+    .bar-seg {
+      height: 100%;
+      transition: width 300ms ease;
+    }
+    .bg-purple { background-color: #a855f7; }
+    .bg-blue { background-color: #3b82f6; }
+    .bg-orange { background-color: #ea580c; }
+
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .color-dot-free {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      background-color: #27272a;
+      border: 1px solid #3f3f46;
+    }
+
+    .divider {
+      margin: 14px 0;
+      border-top: 1px solid #27272a;
+    }
+    .row-free-space {
+      border-top: 1px solid rgba(39, 39, 42, 0.6);
+      padding-top: 6px;
+    }
+
+    /* Cards */
+    .quota-card {
+      background-color: #202023;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Refresh button */
+    .btn-refresh {
+      padding: 2px;
+      border-radius: 4px;
+      color: #71717a;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 150ms ease;
+    }
+    .btn-refresh:hover {
+      color: #e4e4e7;
+      background-color: #27272a;
+    }
+    .btn-refresh:active {
+      transform: scale(0.95);
+    }
+    .refresh-icon {
+      width: 14px;
+      height: 14px;
+      transition: transform 500ms ease;
+    }
+    .rotate-180 {
+      transform: rotate(180deg);
+    }
+    .circle-svg {
+      width: 16px;
+      height: 16px;
+    }
+    #line-input {
+      width: 48px;
+      background: #202023;
+      color: #e4e4e7;
+      border: 1px solid #3f3f46;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font: inherit;
+      text-align: right;
+      appearance: textfield;
+    }
+    #line-input::-webkit-inner-spin-button,
+    #line-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    #line-input:focus { outline: none; border-color: #71717a; }
+  </style>
+</head>
+<body>
+  <div class="main-card">
+    
+    <!-- Top Header: Context of Current Window -->
+    <div class="flex items-center justify-between text-xs text-zinc-400 font-medium" style="margin-bottom: 8px;">
+      <div class="flex items-center gap-1 text-zinc-300">
+        <span class="font-medium">Context</span>
+        <button id="btn-refresh" onclick="triggerRefresh()" title="Refresh" class="btn-refresh">
+          <svg id="refresh-icon" class="refresh-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12a7 7 0 1 1-2-5m0-4v4h-4" />
+          </svg>
+        </button>
+      </div>
+      <span id="header-capacity" class="num text-11 text-zinc-500">--</span>
+      <span id="line-wrap" class="num text-11 text-zinc-500" style="display:none; align-items:center; gap:4px;" title="Your own temporary compress line (in k tokens). Not an official limit. Saved per model group.">
+        <span id="line-pct" class="text-zinc-300">--%</span>
+        <span>of line</span>
+        <input id="line-input" type="number" min="1" max="5000" step="1" value="100" aria-label="Compress line in k tokens">
+        <span>k</span>
+      </span>
+    </div>
+
+    <!-- Usage summary for Current Window -->
+    <div class="flex items-baseline justify-between" style="margin-bottom: 10px;">
+      <div id="usage-pct" class="text-xl font-bold tracking-tight text-white num">--</div>
+      <div id="model-tag" class="text-11 num text-zinc-500">--</div>
+    </div>
+
+    <!-- Multi-color Segmented Progress Bar -->
+    <div class="progress-bar-wrap">
+      <div id="bar-cached" style="width: 0%;" class="bar-seg bg-purple" title="Cache Read"></div>
+      <div id="bar-input" style="width: 0%;" class="bar-seg bg-blue" title="Input"></div>
+      <div id="bar-output" style="width: 0%;" class="bar-seg bg-orange" title="Last Output"></div>
+    </div>
+
+    <div class="text-10 text-zinc-500" style="margin-bottom: 8px;">Estimate = Input + Cache Read + Last Output from the latest call. Percent is relative to your own compress line.</div>
+    <!-- Breakdown List -->
+    <div class="space-y-sm text-xs">
+      <div class="flex items-center justify-between" style="padding: 2px 0;">
+        <div class="flex items-center gap-2">
+          <span class="color-dot bg-purple"></span>
+          <span class="text-zinc-300">Cache Read</span>
+        </div>
+        <div class="num text-right space-x">
+          <span id="val-cached" class="text-zinc-400">--</span>
+          <span id="pct-cached" class="font-semibold text-white w-fixed-pct">--%</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between" style="padding: 2px 0;">
+        <div class="flex items-center gap-2">
+          <span class="color-dot bg-blue"></span>
+          <span class="text-zinc-300">Input</span>
+        </div>
+        <div class="num text-right space-x">
+          <span id="val-input" class="text-zinc-400">--</span>
+          <span id="pct-input" class="font-semibold text-white w-fixed-pct">--%</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between" style="padding: 2px 0;">
+        <div class="flex items-center gap-2">
+          <span class="color-dot bg-orange"></span>
+          <span class="text-zinc-300">Last Output</span>
+        </div>
+        <div class="num text-right space-x">
+          <span id="val-output" class="text-zinc-400">--</span>
+          <span id="pct-output" class="font-semibold text-white w-fixed-pct">--%</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between row-free-space" style="padding: 6px 0 2px 0;">
+        <div class="flex items-center gap-2">
+          <span class="color-dot-free"></span>
+          <span class="text-zinc-500">Until compress line</span>
+        </div>
+        <div class="num text-right space-x">
+          <span id="val-free" class="text-zinc-500">--</span>
+          <span id="pct-free" class="font-semibold text-zinc-400 w-fixed-pct">--%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider"></div>
+
+    <!-- Bottom Quota Section (Automatically follows Current Window's Model) -->
+    <div>
+      <div class="flex items-center justify-between text-xs text-zinc-400 font-medium" style="margin-bottom: 10px;">
+        <span id="quota-title" class="font-semibold text-xs text-zinc-200">Quota unavailable</span>
+        <span id="quota-status-badge" class="text-10 text-zinc-500 font-normal" style="white-space: nowrap;"></span>
+      </div>
+
+      <div class="space-y-md">
+        <!-- Weekly Limit Card -->
+        <div id="card-weekly" class="quota-card">
+          <div>
+            <div id="lbl-weekly" class="text-xs font-medium text-zinc-200">Weekly Limit Remaining</div>
+            <div id="weekly-refresh" class="text-10 text-zinc-500" style="margin-top: 2px;"></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="pct-weekly" class="num text-xs font-bold text-emerald-400">--%</span>
+            <svg class="circle-svg" viewBox="0 0 36 36">
+              <path style="color: #27272a;" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path id="circle-weekly" class="text-emerald-500" style="transition: all 500ms ease;" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Five Hour Limit Card -->
+        <div id="card-fivehour" class="quota-card">
+          <div>
+            <div id="lbl-fivehour" class="text-xs font-medium text-zinc-200">Five Hour Limit Remaining</div>
+            <div id="fivehour-refresh" class="text-10 text-zinc-500" style="margin-top: 2px;"></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="pct-fivehour" class="num text-xs font-bold text-emerald-400">--%</span>
+            <svg class="circle-svg" viewBox="0 0 36 36">
+              <path style="color: #27272a;" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path id="circle-fivehour" class="text-emerald-500" style="transition: all 500ms ease;" stroke-dasharray="0, 100" stroke-width="4" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+let requestId = 0;
+let displayedKey = null;
+let currentGroup = null;
+let quotaCache = Object.create(null);
+let lastStatusData = null;
+let wakeTimer = null;
+
+const $ = id => document.getElementById(id);
+const fmt = value => value == null ? '--' : value >= 1e6 ? (value / 1e6).toFixed(1) + 'M' : value >= 1e3 ? (value / 1e3).toFixed(1) + 'k' : String(value);
+const validId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(value);
+
+function resolveClientConversationId() {
+  const supplied = window.sidecar?.conversationId;
+  if (supplied !== null && supplied !== undefined && supplied !== '')
+    return validId(supplied) ? { status: 'valid', id: supplied } : { status: 'invalid_id', id: null };
+  const url = new URLSearchParams(window.location.search).get('conversationId');
+  if (url !== null && url !== '')
+    return validId(url) ? { status: 'valid', id: url } : { status: 'invalid_id', id: null };
+  return { status: 'unbound', id: null };
+}
+
+const keyOf = binding => binding.status === 'valid' ? `valid:${binding.id}` : `state:${binding.status}`;
+const groupOf = model => /^Gemini\b.*Argon/i.test(model || '') ? 'argon' : /^Gemini\b/i.test(model || '') ? 'gemini' : /^(Claude|GPT(?:-|\b))/i.test(model || '') ? 'claude' : null;
+const groupTitle = group => ({ argon: 'Gemini 4 Argon', gemini: 'Gemini Models', claude: 'Claude and GPT models' })[group] || 'Quota unavailable';
+
+function messageFor(status) {
+  return ({ unbound: 'Waiting for session binding...', invalid_id: 'Invalid session ID', awaiting_usage: 'Awaiting usage data', unavailable: 'Session data unavailable' })[status] || 'Session data unavailable';
+}
+
+// Temporary compress line (in k tokens), user-editable and saved per model group.
+// This is the user's own threshold, not an official limit.
+const GROUP_DEFAULT_LINE_K = { argon: 100, claude: 100, gemini: 300 };
+const memLineK = Object.create(null);
+const lineGroupOf = model => groupOf(model) || 'default';
+const lineStoreKey = model => `compressLineK:group:${lineGroupOf(model)}`;
+const validLineK = v => Number.isFinite(v) && v >= 1 && v <= 5000;
+function getLineK(model) {
+  const g = lineGroupOf(model);
+  try { const v = Number(localStorage.getItem(lineStoreKey(model))); if (validLineK(v)) return v; } catch {}
+  return validLineK(memLineK[g]) ? memLineK[g] : (GROUP_DEFAULT_LINE_K[g] || 100);
+}
+function saveLineK(v, model) {
+  const g = lineGroupOf(model);
+  memLineK[g] = v;
+  try { localStorage.setItem(lineStoreKey(model), String(v)); } catch {}
+}
+
+function setBadge(message) {
+  $('quota-status-badge').textContent = message || '';
+  $('quota-status-badge').style.color = message === 'Refresh failed' ? '#f87171' : '#71717a';
+}
+
+function clearContext(status) {
+  $('header-capacity').textContent = messageFor(status);
+  $('line-wrap').style.display = 'none';
+  $('usage-pct').textContent = '--';
+  $('model-tag').textContent = status === 'awaiting_usage' ? 'Awaiting usage data' : '--';
+  for (const part of ['cached', 'input', 'output']) {
+    $(`bar-${part}`).style.width = '0%';
+    $(`val-${part}`).textContent = '--';
+    $(`pct-${part}`).textContent = '--%';
+  }
+  $('val-free').textContent = '--';
+  $('pct-free').textContent = '--%';
+}
+
+function renderContext(data) {
+  if (data.contextStatus !== 'ready') {
+    clearContext(data.contextStatus);
+    if (data.modelName) $('model-tag').textContent = data.modelName;
+    return;
+  }
+  const lineK = getLineK(data.modelName);
+  const cap = lineK * 1000;
+  $('header-capacity').textContent = '';
+  $('line-wrap').style.display = 'inline-flex';
+  if (document.activeElement !== $('line-input')) $('line-input').value = lineK;
+  $('line-pct').textContent = `${(data.totalUsed / cap * 100).toFixed(1)}%`;
+  $('usage-pct').textContent = `${fmt(data.totalUsed)} tokens`;
+  $('usage-pct').title = `Exact estimate: ${data.totalUsed} (Input + Cache Read + Last Output)`;
+  $('model-tag').textContent = data.modelName || 'Unknown model';
+  for (const [part, field] of [['cached', 'cachedTokens'], ['input', 'inputTokens'], ['output', 'outputTokens']]) {
+    const value = data.breakdown?.[field];
+    const pct = cap && value != null ? (value / cap * 100).toFixed(1) : null;
+    $(`bar-${part}`).style.width = pct ? `${Math.min(100, Number(pct))}%` : '0%';
+    $(`val-${part}`).textContent = fmt(value);
+    $(`pct-${part}`).textContent = pct ? `${pct}%` : '--%';
+  }
+  const left = Math.max(0, cap - data.totalUsed);
+  $('val-free').textContent = fmt(left);
+  $('pct-free').textContent = `${(left / cap * 100).toFixed(1)}%`;
+}
+
+function renderBucket(kind, bucket) {
+  const card = $(kind === 'weekly' ? 'card-weekly' : 'card-fivehour');
+  card.style.display = bucket ? 'flex' : 'none';
+  if (!bucket) return;
+  const suffix = kind === 'weekly' ? 'weekly' : 'fivehour';
+  $(`lbl-${suffix}`).textContent = bucket.name || (kind === 'weekly' ? 'Weekly Limit Remaining' : 'Five Hour Limit Remaining');
+  $(`${suffix}-refresh`).textContent = bucket.refresh || '';
+  $(`pct-${suffix}`).textContent = bucket.pct == null ? '--%' : `${bucket.pct}%`;
+  $(`circle-${suffix}`).setAttribute('stroke-dasharray', `${bucket.pct ?? 0}, 100`);
+}
+
+function renderQuota(group, failed = false) {
+  $('quota-title').textContent = groupTitle(group);
+  const quota = group ? quotaCache[group] : null;
+  renderBucket('weekly', quota?.weekly);
+  renderBucket('fiveHour', quota?.fiveHour);
+  setBadge(failed ? 'Refresh failed' : group && !quota?.weekly && !quota?.fiveHour ? 'Quota unavailable' : '');
+}
+
+async function post(path, body) {
+  const fetchFn = window.sidecar?.fetch || window.fetch;
+  const res = await fetchFn(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
+}
+
+async function refreshContextData() {
+  const id = ++requestId;
+  const binding = resolveClientConversationId();
+  const key = keyOf(binding);
+  const isCurrent = () => {
+    if (id !== requestId) return false;
+    const live = resolveClientConversationId();
+    if (keyOf(live) === key) return true;
+    displayedKey = keyOf(live);
+    currentGroup = null;
+    quotaCache = Object.create(null);
+    lastStatusData = null;
+    clearContext(live.status === 'valid' ? 'unavailable' : live.status);
+    renderQuota(null);
+    return false;
+  };
+  if (displayedKey !== key) {
+    displayedKey = key;
+    currentGroup = null;
+    quotaCache = Object.create(null);
+    clearContext(binding.status === 'valid' ? 'unavailable' : binding.status);
+    renderQuota(null);
+  }
+  if (binding.status !== 'valid') return;
+  let data;
+  try {
+    data = await post('/api/status', { conversationId: binding.id });
+    if (!isCurrent()) return;
+    if (data.conversationId !== binding.id) throw new Error('Session mismatch');
+    lastStatusData = data;
+    renderContext(data);
+  } catch {
+    if (isCurrent()) setBadge('Refresh failed');
+    return;
+  }
+  const group = groupOf(data.modelName);
+  if (group !== currentGroup) {
+    currentGroup = group;
+    renderQuota(group);
+  }
+  if (!group) return;
+  try {
+    const result = await post('/api/quotas', {});
+    if (!isCurrent()) return;
+    if (result.lastFetchSuccess === true) {
+      const next = Object.create(null);
+      for (const name of ['gemini', 'argon', 'claude']) if (result[name]) next[name] = result[name];
+      quotaCache = next;
+    }
+    renderQuota(group, result.lastFetchSuccess !== true);
+  } catch {
+    if (isCurrent()) renderQuota(group, true);
+  }
+}
+
+async function triggerRefresh() {
+  const icon = $('refresh-icon');
+  icon?.classList.add('rotate-180');
+  await refreshContextData();
+  setTimeout(() => icon?.classList.remove('rotate-180'), 500);
+}
+
+function scheduleWakeRefresh() {
+  if (document.hidden || wakeTimer) return;
+  wakeTimer = setTimeout(() => { wakeTimer = null; if (!document.hidden) refreshContextData(); }, 150);
+}
+document.addEventListener('DOMContentLoaded', refreshContextData);
+document.addEventListener('visibilitychange', scheduleWakeRefresh);
+window.addEventListener('focus', scheduleWakeRefresh);
+$('line-input').addEventListener('change', () => {
+  const model = lastStatusData?.modelName;
+  const v = Math.round(Number($('line-input').value));
+  if (validLineK(v)) saveLineK(v, model);
+  $('line-input').value = getLineK(model);
+  if (lastStatusData) renderContext(lastStatusData);
+});
+
+  </script>
+</body>
+</html>

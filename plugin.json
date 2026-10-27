@@ -1,0 +1,13 @@
+{
+  "name": "context-monitor",
+  "displayName": "Context & Quota Monitor",
+  "description": "A community-built, Claude Code-inspired context estimate and quota viewer for Antigravity IDE. (Unofficial, not affiliated with Google or Anthropic)",
+  "version": "1.0.0",
+  "author": "aegithalos",
+  "credits": {
+    "designInspiration": "Claude Code (Anthropic)",
+    "productDesign": "aegithalos",
+    "implementation": "Gemini (3.8 Flash, 4 Argon) & Claude (Sonnet 5.5, Opus 5.5)",
+    "codeAudit": "ChatGPT Astra, Sol 6.1"
+  }
+}
