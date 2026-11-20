@@ -1,4 +1,4 @@
-# Antigravity Context & Quota Monitor v1.0.0
+# Antigravity Context & Quota Monitor v1.0.1
 
 一个用于 Antigravity IDE 的本地侧边栏小工具，用来查看**当前对话窗口的上下文 Token 估算用量**、**自定义的手动压缩提醒线（Compress Line）**，以及**当前模型所属分组的剩余配额（Quota）**。
 
@@ -18,6 +18,7 @@
 
 1. **当前模型名称**：
    - 从当前对话记录文件 `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl` 中，提取最后一条 `USER_INPUT` 里的 `<USER_SETTINGS_CHANGE>` 模型切换记录（匹配 `changed setting Model Selection from X to Y.` 或备用 `model:` 字段）。
+   - 当前识别到的模型名现在显示在 token 数上方。
 2. **上下文 Token 数**：
    - 从同一个 `transcript.jsonl` 文件中，读取最后一条模型回复（`PLANNER_RESPONSE`）的三个字段：
      - `input_tokens`（Input / 蓝色输入）
@@ -32,6 +33,7 @@
      - **Gemini Models**（Weekly / Five Hour）
      - **Gemini 4 Argon**（Weekly）
      - **Claude and GPT models**（Weekly / Five Hour，Claude 各版本与 GPT 共用该配额池）
+   - 实测分组补充：Gemini 4 Neon、Gemini 4 Hydrogen、Orchestrator (Neon) 走 **Gemini Models** 额度；Orchestrator (Argon) 走 **Gemini 4 Argon** 额度。
 
 ### 2. 关于“压缩线（Compress Line）”——这不是官方上限！
 
@@ -114,12 +116,14 @@ An unofficial, local side-panel plugin for Antigravity IDE that displays **estim
 
 1. **Model Name**:
    - Extracted from the latest `<USER_SETTINGS_CHANGE>` block inside `USER_INPUT` entries in `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl`.
+   - The detected model name is now displayed above the token count.
 2. **Context Token Counts**:
    - Extracted from the latest `PLANNER_RESPONSE` entry in the same `transcript.jsonl`, requiring all three fields: `input_tokens` (blue), `cache_read_tokens` (purple), and `output_tokens` (orange). If any field is missing or invalid, the panel reports the usage as unavailable rather than substituting `0`.
    - **Blue `Input` vs. Purple `Cache Read` (Author's Live Observation & Inference — for reference only, not official documentation)**: In live testing, new messages sent to the agent (or the first turn after starting/compacting a session) appear as blue `Input`, while prior history typically shifts into purple `Cache Read` on subsequent turns. Based on observed quota consumption, continuing a conversation while purple cache remains active appears to use less quota, whereas extended idle time or mid-conversation edits to `GEMINI.md` have been observed to reset `Cache Read` to `0` and recount history under blue `Input`.
    - **Post-Compaction Refresh (based on observed host logs)**: The observed `CHECKPOINT` summary entries do not contain the three token usage fields, so they alone cannot update the estimate after compaction. Refresh the panel after a subsequent model response records complete usage data.
 3. **Remaining Quota**:
    - The green ring section directly mirrors the official quota data returned by the host's local Language Server endpoint (`/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary`, queried via `ANTIGRAVITY_LS_ADDRESS` and `ANTIGRAVITY_CSRF_TOKEN`, with percentages floored to integers after floating-point rounding correction to align with observed native UI display) and grouped into **Gemini Models**, **Gemini 4 Argon**, and **Claude and GPT models**.
+   - Based on live testing: **Gemini 4 Neon**, **Gemini 4 Hydrogen**, and **Orchestrator (Neon)** use the **Gemini Models** quota, while **Orchestrator (Argon)** uses the **Gemini 4 Argon** quota.
 
 ### 2. About the "Compress Line" (Not an Official Limit)
 

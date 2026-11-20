@@ -2,7 +2,7 @@
   "name": "context-monitor",
   "displayName": "Context & Quota Monitor",
   "description": "A community-built, Claude Code-inspired context estimate and quota viewer for Antigravity IDE. (Unofficial, not affiliated with Google or Anthropic)",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "aegithalos",
   "credits": {
     "designInspiration": "Claude Code (Anthropic)",

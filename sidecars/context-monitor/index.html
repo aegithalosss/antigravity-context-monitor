@@ -189,10 +189,10 @@
       </span>
     </div>
 
-    <!-- Usage summary for Current Window -->
-    <div class="flex items-baseline justify-between" style="margin-bottom: 10px;">
+    <!-- Usage summary for Current Window: model name on its own line above the number -->
+    <div id="model-tag" class="text-11 num text-zinc-500" style="margin-bottom: 2px; word-break: break-word;">--</div>
+    <div style="margin-bottom: 10px;">
       <div id="usage-pct" class="text-xl font-bold tracking-tight text-white num">--</div>
-      <div id="model-tag" class="text-11 num text-zinc-500">--</div>
     </div>
 
     <!-- Multi-color Segmented Progress Bar -->
@@ -318,7 +318,7 @@ function resolveClientConversationId() {
 }
 
 const keyOf = binding => binding.status === 'valid' ? `valid:${binding.id}` : `state:${binding.status}`;
-const groupOf = model => /^Gemini\b.*Argon/i.test(model || '') ? 'argon' : /^Gemini\b/i.test(model || '') ? 'gemini' : /^(Claude|GPT(?:-|\b))/i.test(model || '') ? 'claude' : null;
+const groupOf = model => /^(Gemini|Orchestrator)\b.*Argon/i.test(model || '') ? 'argon' : /^(Gemini|Orchestrator)\b/i.test(model || '') ? 'gemini' : /^(Claude|GPT(?:-|\b))/i.test(model || '') ? 'claude' : null;
 const groupTitle = group => ({ argon: 'Gemini 4 Argon', gemini: 'Gemini Models', claude: 'Claude and GPT models' })[group] || 'Quota unavailable';
 
 function messageFor(status) {
