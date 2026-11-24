@@ -318,7 +318,8 @@ function resolveClientConversationId() {
 }
 
 const keyOf = binding => binding.status === 'valid' ? `valid:${binding.id}` : `state:${binding.status}`;
-const groupOf = model => /^(Gemini|Orchestrator)\b.*Argon/i.test(model || '') ? 'argon' : /^(Gemini|Orchestrator)\b/i.test(model || '') ? 'gemini' : /^(Claude|GPT(?:-|\b))/i.test(model || '') ? 'claude' : null;
+// Quota group: since the late-November host update, all Gemini models (incl. Argon and Orchestrator) share the Gemini Models quota.
+const groupOf = model => /^(Gemini|Orchestrator)\b/i.test(model || '') ? 'gemini' : /^(Claude|GPT(?:-|\b))/i.test(model || '') ? 'claude' : null;
 const groupTitle = group => ({ argon: 'Gemini 4 Argon', gemini: 'Gemini Models', claude: 'Claude and GPT models' })[group] || 'Quota unavailable';
 
 function messageFor(status) {
@@ -327,8 +328,9 @@ function messageFor(status) {
 
 // Temporary compress line (in k tokens), user-editable and saved per model group.
 // This is the user's own threshold, not an official limit.
-const GROUP_DEFAULT_LINE_K = { argon: 100, claude: 100, gemini: 300 };
+const GROUP_DEFAULT_LINE_K = { claude: 100, gemini: 300 };
 const memLineK = Object.create(null);
+// Compress line is shared per quota group: changing it in one Gemini window changes it for all Gemini models.
 const lineGroupOf = model => groupOf(model) || 'default';
 const lineStoreKey = model => `compressLineK:group:${lineGroupOf(model)}`;
 const validLineK = v => Number.isFinite(v) && v >= 1 && v <= 5000;

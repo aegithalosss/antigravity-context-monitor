@@ -1,4 +1,4 @@
-# Antigravity Context & Quota Monitor v1.0.1
+# Antigravity Context & Quota Monitor v1.0.2
 
 一个用于 Antigravity IDE 的本地侧边栏小工具，用来查看**当前对话窗口的上下文 Token 估算用量**、**自定义的手动压缩提醒线（Compress Line）**，以及**当前模型所属分组的剩余配额（Quota）**。
 
@@ -29,18 +29,16 @@
    - **缺一不可**：三项数字只要缺任何一项或格式不合法，面板都会直接显示等待/不可用状态，**绝不用 `0` 充数**。
 3. **剩余配额（Quota）**：
    - 底部绿色圆环区域**直接同步显示 Antigravity 官方本机接口的数据**（通过宿主注入本机进程的环境变量 `ANTIGRAVITY_LS_ADDRESS` 与 `ANTIGRAVITY_CSRF_TOKEN`，向本机 Language Server 接口 `/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary` 发起本地请求，并在消除浮点尾数误差后对百分比向下取整，以对齐实测观察到的官方菜单显示）。
-   - 根据当前窗口识别出的模型名，自动展示对应分组的配额：
-     - **Gemini Models**（Weekly / Five Hour）
-     - **Gemini 4 Argon**（Weekly）
+   - 根据当前窗口识别出的模型名，自动展示对应分组的配额（Antigravity 更新后，Argon 不再有单独额度）：
+     - **Gemini Models**（Weekly / Five Hour，所有 Gemini 模型含 Argon、Carbon、Neon、Hydrogen、Orchestrator 均走此额度）
      - **Claude and GPT models**（Weekly / Five Hour，Claude 各版本与 GPT 共用该配额池）
-   - 实测分组补充：Gemini 4 Neon、Gemini 4 Hydrogen、Orchestrator (Neon) 走 **Gemini Models** 额度；Orchestrator (Argon) 走 **Gemini 4 Argon** 额度。
 
 ### 2. 关于“压缩线（Compress Line）”——这不是官方上限！
 
 - Antigravity 官方目前没有公布各模型的真实上下文上限和自动压缩触发点。因此，**本插件不猜测、也不内置任何假装成官方数据的容量上限**。
 - 面板右上角的 `of line [ 100 ] k` 是**你自己设定的手动压缩提醒线**（单位为 `k` tokens，可输入范围 `1–5000`）。
-- 初始默认值按模型分组自动设定：**Gemini 4 Argon 默认 `100`k**、**Claude / GPT 默认 `100`k**、**Gemini 3.8 默认 `300`k**。
-- 当你手动修改输入框数字时，会按**模型分组**保存在面板页面的 `localStorage`（键名 `compressLineK:group:<group>`，回退为当前页面内存）中，供同一存储域下刷新或切换同组模型时沿用；**不保证跨窗口或重启后保留，其他已打开面板也不会立即同步更新**。面板上的百分比、进度条长度以及 `Until compress line`（距离压缩线剩余量）全部相对于这条线计算。
+- 初始默认值按额度分组自动设定：**所有 Gemini 模型（含 Argon、Carbon、Orchestrator 等）统一默认 `300`k**、**Claude / GPT 默认 `100`k**。
+- 压缩线改为**同一组额度共用一条**，保存在面板页面的 `localStorage`（键名 `compressLineK:group:<group>`，目前仅有 `gemini`、`claude` 两组，未匹配模型回退为 `default`，同时有当前页面内存回退）中：在一个 Gemini 窗口修改后，所有 Gemini 模型都会跟着变；Claude 和 GPT 共用另一条。**不保证跨存储域或重启后保留，其他已打开面板也不会立即同步更新**。面板上的百分比、进度条长度以及 `Until compress line`（距离压缩线剩余量）全部相对于这条线计算。
 - **作者个人样本观察（仅供参考，非官方结论或额度保证）**：
   - 在个人使用样本中观察到，上下文越大，单次回复（尤其是带多步工具调用往返）消耗的配额往往越多。
   - **作者本人日常习惯**：**Argon 和 Claude 通常在 `100k` 以内手动压缩**（在作者个人的少量测试样本中，Claude 在 `60k` 左右时曾观察到单次回复消耗在周额度的 `1%` 以内，但实际消耗受具体任务与工具调用影响，不做保证）；**Gemini 3.8 在作者实测中观察到会在 `250k` 左右触发自动压缩**（默认提醒线设为 `300k`，如希望在之前收到提醒可自行调小）。
@@ -122,13 +120,12 @@ An unofficial, local side-panel plugin for Antigravity IDE that displays **estim
    - **Blue `Input` vs. Purple `Cache Read` (Author's Live Observation & Inference — for reference only, not official documentation)**: In live testing, new messages sent to the agent (or the first turn after starting/compacting a session) appear as blue `Input`, while prior history typically shifts into purple `Cache Read` on subsequent turns. Based on observed quota consumption, continuing a conversation while purple cache remains active appears to use less quota, whereas extended idle time or mid-conversation edits to `GEMINI.md` have been observed to reset `Cache Read` to `0` and recount history under blue `Input`.
    - **Post-Compaction Refresh (based on observed host logs)**: The observed `CHECKPOINT` summary entries do not contain the three token usage fields, so they alone cannot update the estimate after compaction. Refresh the panel after a subsequent model response records complete usage data.
 3. **Remaining Quota**:
-   - The green ring section directly mirrors the official quota data returned by the host's local Language Server endpoint (`/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary`, queried via `ANTIGRAVITY_LS_ADDRESS` and `ANTIGRAVITY_CSRF_TOKEN`, with percentages floored to integers after floating-point rounding correction to align with observed native UI display) and grouped into **Gemini Models**, **Gemini 4 Argon**, and **Claude and GPT models**.
-   - Based on live testing: **Gemini 4 Neon**, **Gemini 4 Hydrogen**, and **Orchestrator (Neon)** use the **Gemini Models** quota, while **Orchestrator (Argon)** uses the **Gemini 4 Argon** quota.
+   - The green ring section directly mirrors the official quota data returned by the host's local Language Server endpoint (`/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary`, queried via `ANTIGRAVITY_LS_ADDRESS` and `ANTIGRAVITY_CSRF_TOKEN`, with percentages floored to integers after floating-point rounding correction to align with observed native UI display) and grouped into **Gemini Models** and **Claude and GPT models** (after the Antigravity update, Argon no longer has a separate quota — all Gemini models, including Argon, Carbon, Neon, Hydrogen, and Orchestrator, share the **Gemini Models** quota).
 
 ### 2. About the "Compress Line" (Not an Official Limit)
 
 - Antigravity does not publish official context window limits or auto-compaction thresholds per model. This plugin **does not hardcode or guess fake official limits**.
-- The `of line [ 100 ] k` input in the top-right corner is **your own custom threshold** (in `k` tokens, range `1–5000`), with model-group defaults (**`100`k for Gemini 4 Argon and Claude/GPT**, **`300`k for Gemini 3.8**). Changes are saved per model group in the panel page's `localStorage` (`compressLineK:group:<group>`, with an in-memory fallback) for reuse within the same storage origin; **persistence across windows or restarts is not guaranteed, and other open panels will not immediately sync**.
+- The `of line [ 100 ] k` input in the top-right corner is **your own custom threshold** (in `k` tokens, range `1–5000`), with quota-group defaults (**`300`k for all Gemini models**, **`100`k for Claude/GPT**). The compress line is shared per quota group and saved in the panel page's `localStorage` (`compressLineK:group:<group>`, now consolidated into `gemini` and `claude` only, with `default` and in-memory fallbacks): changing it in one Gemini window updates it for all Gemini models, while Claude and GPT share their own line. **Persistence across storage origins or restarts is not guaranteed, and other open panels will not immediately sync**.
 - All percentages, the segmented progress bar, and `Until compress line` are calculated relative to your custom threshold as a personal reminder for when to run `/compact`.
 - **Author's Personal Sample Observations (for reference only, not official limits or guarantees)**: In the author's own usage samples, larger contexts (especially with multi-step tool calls) generally correlated with higher quota drain. The author personally compacts **Gemini 4 Argon and Claude within `100k`** (or around `60k` on Claude, where single-turn drain in a few personal samples was observed within ~1% of weekly quota, though actual usage varies by task). **Gemini 3.8 was observed auto-compacting around `250k`** in the author's live tests.
 
