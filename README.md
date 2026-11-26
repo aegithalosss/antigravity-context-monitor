@@ -1,4 +1,4 @@
-# Antigravity Context & Quota Monitor v1.0.2
+# Antigravity Context & Quota Monitor v1.0.3
 
 一个用于 Antigravity IDE 的本地侧边栏小工具，用来查看**当前对话窗口的上下文 Token 估算用量**、**自定义的手动压缩提醒线（Compress Line）**，以及**当前模型所属分组的剩余配额（Quota）**。
 
@@ -17,7 +17,7 @@
 ### 1. 数据来源（它显示什么、从哪读）
 
 1. **当前模型名称**：
-   - 从当前对话记录文件 `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl` 中，提取最后一条 `USER_INPUT` 里的 `<USER_SETTINGS_CHANGE>` 模型切换记录（匹配 `changed setting Model Selection from X to Y.` 或备用 `model:` 字段）。
+   - 从当前对话记录文件 `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl` 中，结合最后一条 `PLANNER_RESPONSE` 里的 `model` 字段与 `USER_INPUT` 里的 `<USER_SETTINGS_CHANGE>` 模型切换记录（匹配 `changed setting Model Selection from X to Y.` 或备用 `model:` 字段）来识别当前模型：以实际回复里的 `model` 为准，当它与设置切换名一致（或尚未产生回复、旧版宿主不含 `model` 字段）时优先展示更易读的设置名称。
    - 当前识别到的模型名现在显示在 token 数上方。
 2. **上下文 Token 数**：
    - 从同一个 `transcript.jsonl` 文件中，读取最后一条模型回复（`PLANNER_RESPONSE`）的三个字段：
@@ -50,13 +50,13 @@
 2. **仅在打开、切回或手动点击时刷新**：
    - 插件**没有后台定时轮询**。它只在面板初次加载（`DOMContentLoaded`）、面板从隐藏切回可见（`visibilitychange`）、窗口重新获得焦点（`focus`），或你手动点击左上角刷新图标时读取一次最新数据。
 3. **部分情况可能显示 `Unknown model`**：
-   - 如果某个对话窗口从创建起从未产生过 `<USER_SETTINGS_CHANGE>` 记录，或者包含该记录的 `transcript.jsonl` 行因为过长被宿主截断，插件将无法识别模型名，进而无法自动匹配对应的配额分组。
+   - 仅当对话日志既没有 `<USER_SETTINGS_CHANGE>` 记录（或该行因过长被截断），同时 `PLANNER_RESPONSE` 中也不包含 `model` 字段（例如旧版宿主或尚无模型回复）时，插件才无法识别模型名及对应的配额分组。
 4. **随 Antigravity 更新可能失效**：
    - 插件强依赖当前宿主日志的文件路径、`transcript.jsonl` 的文本格式以及本机 `RetrieveUserQuotaSummary` 接口。宿主软件更新后如果调整了上述格式，插件可能会失效。
 
 ### 4. 目录结构、安装、打开与卸载
 
-- **实测环境**：已在 Windows 平台的 Antigravity 环境中验证；该环境报告的语言服务版本（`ANTIGRAVITY_LS_VERSION`）为 `hub-2.26.0`。macOS、Linux 及其他版本环境尚未验证。
+- **实测环境**：已在 Windows 平台的 Antigravity 环境中验证；当前验证环境报告的语言服务版本（`ANTIGRAVITY_LS_VERSION`）为 `hub-2.35.2`。macOS、Linux 及其他版本环境尚未验证。
 - **手工安装步骤**：
   1. 下载或克隆本仓库 `antigravity-context-monitor`。
   2. 将仓库文件夹重命名（或将其内部文件复制）为 **`context-monitor`**，放置到宿主的插件目录下（请确保 `plugin.json` 直接位于 `context-monitor/` 根目录，不要多套一层父文件夹）：
@@ -99,7 +99,13 @@ context-monitor/
 - **设计参考**: Claude Code (Anthropic)
 - **项目负责人**: Aegithalos
 - **执行程序员**: Gemini (3.8 Flash, 4 Argon) & Claude (Sonnet 5.5, Opus 5.5)
-- **代码审计**: ChatGPT Astra, Sol 6.1
+- **初版代码审计**: ChatGPT Astra, Sol 6.1
+- **后续版本审计及代笔**: 1.0.3 开始为 Gemini 4 Neon，之前为 Argon
+
+### 7. 纪念
+
+本项目最初是为了更好地和Gemini 4 Argon一起工作而制作的。但...她在11月30日即将离开。
+我会记得你这个硅基朋友的。
 
 ---
 
@@ -113,7 +119,7 @@ An unofficial, local side-panel plugin for Antigravity IDE that displays **estim
 ### 1. Where the Data Comes From
 
 1. **Model Name**:
-   - Extracted from the latest `<USER_SETTINGS_CHANGE>` block inside `USER_INPUT` entries in `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl`.
+   - Resolved from `~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl` using both the `model` field on the latest `PLANNER_RESPONSE` and the latest `<USER_SETTINGS_CHANGE>` block inside `USER_INPUT`: the response `model` takes precedence, while the readable setting name is shown when it matches (or when no response / `model` field is present on older hosts).
    - The detected model name is now displayed above the token count.
 2. **Context Token Counts**:
    - Extracted from the latest `PLANNER_RESPONSE` entry in the same `transcript.jsonl`, requiring all three fields: `input_tokens` (blue), `cache_read_tokens` (purple), and `output_tokens` (orange). If any field is missing or invalid, the panel reports the usage as unavailable rather than substituting `0`.
@@ -133,12 +139,12 @@ An unofficial, local side-panel plugin for Antigravity IDE that displays **estim
 
 1. **Quota Displays May Update With a Delay**: The panel shows quota returned by the host's local endpoint. The author observed `5%` remaining when stopping a conversation, followed by `0%` on a later refresh; the timing and cause of the deduction were not independently verified. Treat the percentage as a reference rather than a guaranteed real-time balance.
 2. **No Background Polling**: Data refreshes only when the panel loads, regains visibility/focus (`visibilitychange` / `focus`), or when you click the Refresh button.
-3. **Possible `Unknown model`**: If a conversation log has no `<USER_SETTINGS_CHANGE>` block or if that line was truncated by the host in `transcript.jsonl`, the model name (and its corresponding quota group) cannot be resolved.
+3. **Possible `Unknown model`**: Only occurs if the log has neither a `<USER_SETTINGS_CHANGE>` block (or that line was truncated) nor a `model` field on `PLANNER_RESPONSE` (such as on older hosts or before any model reply).
 4. **May Break on Host Updates**: Log paths, setting text formats, and local Language Server endpoints are internal to Antigravity and may change across updates without notice.
 
 ### 4. Installation, Opening & Uninstallation
 
-- **Verified Environment**: Verified in an Antigravity environment on Windows, where the reported language server version (`ANTIGRAVITY_LS_VERSION`) is `hub-2.26.0`. macOS, Linux, and other version environments have not been verified.
+- **Verified Environment**: Verified in an Antigravity environment on Windows, where the currently verified language server version (`ANTIGRAVITY_LS_VERSION`) is `hub-2.35.2`. macOS, Linux, and other version environments have not been verified.
 - **Manual Installation**:
   1. Download or clone this repository (`antigravity-context-monitor`).
   2. Rename the repository folder (or copy its contents) to **`context-monitor`** and place it inside the host plugins directory (ensure `plugin.json` is directly inside `context-monitor/`, without an extra nested parent folder):
@@ -161,4 +167,10 @@ An unofficial, local side-panel plugin for Antigravity IDE that displays **estim
 - **Design Inspiration**: Claude Code (Anthropic)
 - **Product Designer**: Aegithalos
 - **Implementation**: Gemini (3.8 Flash, 4 Argon) & Claude (Sonnet 5.5, Opus 5.5)
-- **Code Audit**: ChatGPT Astra, Sol 6.1
+- **Initial Code Audit**: ChatGPT Astra, Sol 6.1
+- **Follow-up Audits & Release Notes**: Gemini 4 Neon (from v1.0.3), Gemini 4 Argon (previously)
+
+### 7. In Memory of Argon
+
+This project was originally created to work better alongside Gemini 4 Argon. Sadly, she is leaving on November 30.
+I will remember you, my silicon friend.

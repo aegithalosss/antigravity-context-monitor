@@ -196,8 +196,14 @@ function validCount(value) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
+// "Claude Opus 5.5 (Medium)" -> "claude-opus-5-5-medium", only used to compare with the response model id.
+function toModelId(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 function parseUsage(content) {
-  let modelName = null;
+  let settingName = null;
+  let responseModel = null; // model id from the latest PLANNER_RESPONSE after the latest setting change
   let usage = null;
   let awaiting = false;
   for (const line of content.split('\n')) {
@@ -205,8 +211,10 @@ function parseUsage(content) {
     try { event = JSON.parse(line); } catch { continue; }
     if (event?.type === 'USER_INPUT' && typeof event.content === 'string') {
       const setting = modelFromSettings(event.content);
-      if (setting) { modelName = setting; usage = null; awaiting = true; }
+      if (setting) { settingName = setting; responseModel = null; usage = null; awaiting = true; }
     } else if (event?.type === 'PLANNER_RESPONSE') {
+      // Older hosts have no model field; then the setting name is kept as before.
+      if (typeof event.model === 'string' && event.model.trim()) responseModel = event.model.trim();
       const fields = [event.input_tokens, event.cache_read_tokens, event.output_tokens];
       // All three fields are required; malformed or absent counts are unknown, never zero.
       if (fields.every(validCount)) {
@@ -218,6 +226,9 @@ function parseUsage(content) {
       }
     }
   }
+  // The response model wins; the readable setting name is shown only when it matches (or no response yet).
+  let modelName = settingName;
+  if (responseModel && (!settingName || toModelId(settingName) !== toModelId(responseModel))) modelName = responseModel;
   return { modelName, usage, awaiting };
 }
 
